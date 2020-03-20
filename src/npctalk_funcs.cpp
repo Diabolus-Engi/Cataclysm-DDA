@@ -50,9 +50,28 @@
 #include "point.h"
 #include "cata_string_consts.h"
 
-struct itype;
+static const activity_id ACT_FIND_MOUNT( "ACT_FIND_MOUNT" );
+static const activity_id ACT_MOVE_LOOT( "ACT_MOVE_LOOT" );
+static const activity_id ACT_MULTIPLE_BUTCHER( "ACT_MULTIPLE_BUTCHER" );
+static const activity_id ACT_MULTIPLE_CHOP_PLANKS( "ACT_MULTIPLE_CHOP_PLANKS" );
+static const activity_id ACT_MULTIPLE_CHOP_TREES( "ACT_MULTIPLE_CHOP_TREES" );
+static const activity_id ACT_MULTIPLE_CONSTRUCTION( "ACT_MULTIPLE_CONSTRUCTION" );
+static const activity_id ACT_MULTIPLE_FARM( "ACT_MULTIPLE_FARM" );
+static const activity_id ACT_MULTIPLE_FISH( "ACT_MULTIPLE_FISH" );
+static const activity_id ACT_VEHICLE_DECONSTRUCTION( "ACT_VEHICLE_DECONSTRUCTION" );
+static const activity_id ACT_VEHICLE_REPAIR( "ACT_VEHICLE_REPAIR" );
+static const activity_id ACT_WAIT_NPC( "ACT_WAIT_NPC" );
+static const activity_id ACT_SOCIALIZE( "ACT_SOCIALIZE" );
+static const activity_id ACT_TRAIN( "ACT_TRAIN" );
 
-#define dbg(x) DebugLog((DebugLevel)(x), D_NPC) << __FILE__ << ":" << __LINE__ << ": "
+static const mtype_id mon_chicken( "mon_chicken" );
+static const mtype_id mon_cow( "mon_cow" );
+static const mtype_id mon_horse( "mon_horse" );
+
+static const bionic_id bio_power_storage( "bio_power_storage" );
+static const bionic_id bio_power_storage_mkII( "bio_power_storage_mkII" );
+
+struct itype;
 
 void spawn_animal( npc &p, const mtype_id &mon );
 
@@ -591,15 +610,13 @@ static void generic_barber( const std::string &mut_type )
     }
 }
 
-void talk_function::barber_beard( npc &p )
+void talk_function::barber_beard( npc &/*p*/ )
 {
-    ( void )p;
     generic_barber( "facial_hair" );
 }
 
-void talk_function::barber_hair( npc &p )
+void talk_function::barber_hair( npc &/*p*/ )
 {
-    ( void )p;
     generic_barber( "hair_style" );
 }
 
@@ -762,6 +779,8 @@ void talk_function::leave( npc &p )
     }
     p.chatbin.first_topic = "TALK_STRANGER_NEUTRAL";
     p.set_attitude( NPCATT_NULL );
+    p.mission = NPC_MISSION_NULL;
+    p.long_term_goal_action();
 }
 
 void talk_function::stop_following( npc &p )
@@ -831,15 +850,13 @@ void talk_function::drop_weapon( npc &p )
     g->m.add_item_or_charges( p.pos(), p.remove_weapon() );
 }
 
-void talk_function::player_weapon_away( npc &p )
+void talk_function::player_weapon_away( npc &/*p*/ )
 {
-    ( void )p; //unused
     g->u.i_add( g->u.remove_weapon() );
 }
 
-void talk_function::player_weapon_drop( npc &p )
+void talk_function::player_weapon_drop( npc &/*p*/ )
 {
-    ( void )p; // unused
     g->m.add_item_or_charges( g->u.pos(), g->u.remove_weapon() );
 }
 
@@ -904,7 +921,8 @@ void talk_function::start_training( npc &p )
     }
 
     mission *miss = p.chatbin.mission_selected;
-    if( miss != nullptr && miss->get_assigned_player_id() == g->u.getID() ) {
+    if( miss != nullptr && miss->get_assigned_player_id() == g->u.getID() &&
+        miss->is_complete( g->u.getID() ) ) {
         clear_mission( p );
     } else if( !npc_trading::pay_npc( p, cost ) ) {
         return;
