@@ -2698,61 +2698,68 @@ void overmap::place_swamps()
 void overmap::place_roads( const overmap *north, const overmap *east, const overmap *south,
                            const overmap *west )
 {
-    const string_id<overmap_connection> local_road( "local_road" );
-    std::vector<tripoint> &roads_out = connections_out[local_road];
+    std::vector<string_id<overmap_connection>> road_types;
+    //TODO: See if we can pull these automatically from Json
+    road_types.push_back(string_id<overmap_connection>("local_road"));
+    road_types.push_back(string_id<overmap_connection>("local_highway"));
+    std::vector<tripoint> used_points; //Avoids overlapping different road types on borders.
+    for (const auto &id : road_types) {
+        std::vector<tripoint> &roads_out = connections_out[id];
 
-    // Ideally we should have at least two exit points for roads, on different sides
-    if( roads_out.size() < 2 ) {
-        std::vector<tripoint> viable_roads;
-        tripoint tmp;
-        // Populate viable_roads with one point for each neighborless side.
-        // Make sure these points don't conflict with rivers.
-        // TODO: In theory this is a potential infinite loop...
-        if( north == nullptr ) {
-            do {
-                tmp = tripoint( rng( 10, OMAPX - 11 ), 0, 0 );
-            } while( is_river( ter( tmp ) ) || is_river( ter( tmp + point_east ) ) ||
-                     is_river( ter( tmp + point_west ) ) );
-            viable_roads.push_back( tmp );
-        }
-        if( east == nullptr ) {
-            do {
-                tmp = tripoint( OMAPX - 1, rng( 10, OMAPY - 11 ), 0 );
-            } while( is_river( ter( tmp ) ) || is_river( ter( tmp + point_north ) ) ||
-                     is_river( ter( tmp + point_south ) ) );
-            viable_roads.push_back( tmp );
-        }
-        if( south == nullptr ) {
-            do {
-                tmp = tripoint( rng( 10, OMAPX - 11 ), OMAPY - 1, 0 );
-            } while( is_river( ter( tmp ) ) || is_river( ter( tmp + point_east ) ) ||
-                     is_river( ter( tmp + point_west ) ) );
-            viable_roads.push_back( tmp );
-        }
-        if( west == nullptr ) {
-            do {
-                tmp = tripoint( 0, rng( 10, OMAPY - 11 ), 0 );
-            } while( is_river( ter( tmp ) ) || is_river( ter( tmp + point_north ) ) ||
-                     is_river( ter( tmp + point_south ) ) );
-            viable_roads.push_back( tmp );
-        }
-        while( roads_out.size() < 2 && !viable_roads.empty() ) {
-            roads_out.push_back( random_entry_removed( viable_roads ) );
-        }
-    }
+        /* Minimum of 2 connections per overmap for each road type */
+        if (roads_out.size() < 2) {
+            std::vector<tripoint> generated_connections;
+            tripoint tmp;
 
-    std::vector<point> road_points; // cities and roads_out together
-    // Compile our master list of roads; it's less messy if roads_out is first
-    road_points.reserve( roads_out.size() + cities.size() );
-    for( const auto &elem : roads_out ) {
-        road_points.emplace_back( elem.xy() );
-    }
-    for( const auto &elem : cities ) {
-        road_points.emplace_back( elem.pos );
-    }
+            /* Generate new connections to/from un-generated overmaps */
+            if (north == nullptr) {
+                do {
+                    tmp = tripoint(rng(10, OMAPX - 11), 0, 0);
+                } while (is_river(ter(tmp)) || is_river(ter(tmp + point_east)) ||
+                    is_river(ter(tmp + point_west)) || std::find(used_points.begin(), used_points.end(), tmp) != used_points.end());
+                generated_connections.push_back(tmp);
+            }
 
-    // And finally connect them via roads.
-    connect_closest_points( road_points, 0, *local_road );
+            if (east == nullptr) {
+                do {
+                    tmp = tripoint(OMAPX - 1, rng(10, OMAPY - 11), 0);
+                } while (is_river(ter(tmp)) || is_river(ter(tmp + point_north)) ||
+                    is_river(ter(tmp + point_south)) || std::find(used_points.begin(), used_points.end(), tmp) != used_points.end());
+                generated_connections.push_back(tmp);
+            }
+
+            if (west == nullptr) {
+                do {
+                    tmp = tripoint(0, rng(10, OMAPY - 11), 0);
+                } while (is_river(ter(tmp)) || is_river(ter(tmp + point_north)) ||
+                    is_river(ter(tmp + point_south)) || std::find(used_points.begin(), used_points.end(), tmp) != used_points.end());
+                generated_connections.push_back(tmp);
+            }
+
+            if (south == nullptr) {
+                do {
+                    tmp = tripoint(rng(10, OMAPX - 11), OMAPY - 1, 0);
+                } while (is_river(ter(tmp)) || is_river(ter(tmp + point_east)) ||
+                    is_river(ter(tmp + point_west)) || std::find(used_points.begin(), used_points.end(), tmp) != used_points.end());
+                generated_connections.push_back(tmp);
+            }
+
+
+            while (!generated_connections.empty()) {
+                used_points.push_back(random_entry_removed(generated_connections));
+                roads_out.push_back(used_points.back());
+            }
+        }
+
+        std::vector<point> road_points;
+        for (const tripoint& t : roads_out) {
+            road_points.push_back(t.xy());
+        }
+
+        /* Let's do the routing between our new road connections */
+        connect_closest_points(road_points, 0, *id);
+    }
+    used_points.clear();
 }
 
 void overmap::place_river( point pa, point pb )

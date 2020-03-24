@@ -107,7 +107,11 @@ building_gen_pointer get_mapgen_cfunction( const std::string &ident )
             { "road_four_way",    &mapgen_road },
             { "field",            &mapgen_field },
             { "bridge",           &mapgen_bridge },
-            { "highway",          &mapgen_highway },
+            { "highway_straight",    &mapgen_highway },
+            { "highway_curved",      &mapgen_highway },
+            { "highway_end",         &mapgen_highway },
+            { "highway_tee",         &mapgen_highway },
+            { "highway_four_way",    &mapgen_highway },
             { "railroad_straight", &mapgen_railroad },
             { "railroad_curved",   &mapgen_railroad },
             { "railroad_end",      &mapgen_railroad },
@@ -562,6 +566,11 @@ static bool compare_neswx( bool *a1, std::initializer_list<int> a2 )
 void mapgen_road( mapgendata &dat )
 {
     map *const m = &dat.m;
+    const std::string base_typeid = dat.terrain_type().id().str();
+
+    /* Generic mapgen_road */
+    // Let's do it!
+
     // start by filling the whole map with grass/dirt/etc
     dat.fill_groundcover();
 
@@ -1402,6 +1411,15 @@ void mapgen_bridge( mapgendata &dat )
 void mapgen_highway( mapgendata &dat )
 {
     map *const m = &dat.m;
+
+    const std::string base_typeid = dat.terrain_type().id().str();
+
+    if (base_typeid.find("highway") > 0)
+        DebugLog(D_ERROR, D_GAME) << "Highway: " << base_typeid;
+
+    mapgen_road(dat);
+
+    /*
     for( int i = 0; i < SEEX * 2; i++ ) {
         for( int j = 0; j < SEEY * 2; j++ ) {
             if( i < 3 || i >= SEEX * 2 - 3 ) {
@@ -1421,10 +1439,8 @@ void mapgen_highway( mapgendata &dat )
     // spawn regular road out of fuel vehicles
     VehicleSpawn::apply( vspawn_id( "default_highway" ), *m, "highway" );
 
-    if( dat.terrain_type() == "hiway_ew" ) {
-        m->rotate( 1 );
-    }
     m->place_items( "road", 8, point_zero, point( SEEX * 2 - 1, SEEX * 2 - 1 ), false, dat.when() );
+    */
 }
 
 // mapgen_railroad

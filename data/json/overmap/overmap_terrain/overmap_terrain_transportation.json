@@ -1,27 +1,18 @@
 [
   {
     "type": "overmap_terrain",
-    "id": "hiway_ns",
+    "id": "highway",
     "copy-from": "generic_transportation",
     "name": "highway",
-    "sym": "H",
-    "color": "dark_gray",
+    "color": "yellow",
     "see_cost": 2,
     "extras": "road",
-    "mapgen": [ { "method": "builtin", "name": "highway" } ],
-    "flags": [ "NO_ROTATE" ]
-  },
-  {
-    "type": "overmap_terrain",
-    "id": "hiway_ew",
-    "copy-from": "generic_transportation",
-    "name": "highway",
-    "sym": "=",
-    "color": "dark_gray",
-    "see_cost": 2,
-    "extras": "road",
-    "mapgen": [ { "method": "builtin", "name": "highway" } ],
-    "flags": [ "NO_ROTATE" ]
+	"mapgen_straight": [ { "method": "builtin", "name": "highway_straight" } ],
+    "mapgen_curved": [ { "method": "builtin", "name": "highway_curved" } ],
+    "mapgen_end": [ { "method": "builtin", "name": "highway_end" } ],
+    "mapgen_tee": [ { "method": "builtin", "name": "highway_tee" } ],
+    "mapgen_four_way": [ { "method": "builtin", "name": "highway_four_way" } ],
+    "flags": [ "LINEAR" ]
   },
   {
     "type": "overmap_terrain",
